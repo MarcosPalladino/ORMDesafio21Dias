@@ -4,6 +4,5 @@ D:\GitHub Controle\repos\ORMDesafio21Dias\ORMDesafio21Dias\bin\Debug\netcoreapp3
 D:\GitHub Controle\repos\ORMDesafio21Dias\ORMDesafio21Dias\obj\Debug\netcoreapp3.1\ORMDesafio21Dias.csprojAssemblyReference.cache
 D:\GitHub Controle\repos\ORMDesafio21Dias\ORMDesafio21Dias\obj\Debug\netcoreapp3.1\ORMDesafio21Dias.AssemblyInfoInputs.cache
 D:\GitHub Controle\repos\ORMDesafio21Dias\ORMDesafio21Dias\obj\Debug\netcoreapp3.1\ORMDesafio21Dias.AssemblyInfo.cs
-D:\GitHub Controle\repos\ORMDesafio21Dias\ORMDesafio21Dias\obj\Debug\netcoreapp3.1\ORMDesafio21Dias.csproj.CoreCompileInputs.cache
 D:\GitHub Controle\repos\ORMDesafio21Dias\ORMDesafio21Dias\obj\Debug\netcoreapp3.1\ORMDesafio21Dias.dll
 D:\GitHub Controle\repos\ORMDesafio21Dias\ORMDesafio21Dias\obj\Debug\netcoreapp3.1\ORMDesafio21Dias.pdb

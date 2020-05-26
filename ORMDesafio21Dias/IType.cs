@@ -4,9 +4,8 @@ using System.Text;
 
 namespace ORMDesafio21Dias
 {
-    public class IType : IConnectionString
+    public interface IType
     {
-        [Table(PrimaryKey ="id")]
-        public virtual int Id { get; set; }
+        int Id { get; set; }
     }
 }

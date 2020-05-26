@@ -4,8 +4,14 @@ using System.Text;
 
 namespace ORMDesafio21Dias
 {
-    public abstract class CType: IType
+    public abstract class CType: IType, IConnectionString
     {
+        [Table(PrimaryKey = "id")]
+        public virtual int Id { get; set; }
+        
+        [Table(IsNotOnDataBase = true)]
+        public abstract string ConnectionString { get; set; }
+
         public virtual void Save()
         {
             new Service(this).Save();

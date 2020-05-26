@@ -10,5 +10,6 @@ namespace ORMDesafio21Dias
         public string PrimaryKey { set; get; }
         public string Collection { set; get; }
         public string ForeignKey { set; get; }
+        public bool IsNotOnDataBase { set; get; }
     }
 }

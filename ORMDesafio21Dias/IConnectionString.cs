@@ -4,8 +4,8 @@ using System.Text;
 
 namespace ORMDesafio21Dias
 {
-    public class IConnectionString
+    public interface IConnectionString
     {
-       public string ConnectionString;
+       string ConnectionString { get; set; }
     }
 }
