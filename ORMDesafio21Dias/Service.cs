@@ -33,6 +33,11 @@ namespace ORMDesafio21Dias
                             values.Add(p.GetValue(this.cType));
                         }
                     }
+                    else
+                    {
+                        cols.Add(p.Name);
+                        values.Add(p.GetValue(this.cType));
+                    }
                 }
 
                 string table = $"{this.cType.GetType().Name.ToLower()}s";
@@ -43,13 +48,39 @@ namespace ORMDesafio21Dias
                     table = tableAttributes[0].Name;
                 }
 
-                string sql = $"insert into {table} (id, nome, endereco, tipo, cpfcnpj) values ( @id, @nome, @endereco, @tipo, @cpfcnpj)";
+                string sql = $"insert into {table} (";
+                sql += string.Join(',', cols);
+                sql += ") values ( ";
+                sql += "@" + string.Join(", @", cols);
+                sql += ")";
 
                 SqlCommand cmd = new SqlCommand(sql, conn);
                 cmd.CommandType = CommandType.Text;
 
-                cmd.Parameters.Add("@id", SqlDbType.Int);
-                cmd.Parameters["@id"].Value = this.cType.Id;
+                for (var i = 0; i < cols.Count; i++)
+                {
+                    var value = values[i];
+                    var col = cols[i];
+
+                    if(value.GetType() == typeof(int))
+                    {
+                        cmd.Parameters.Add($"@{col}", SqlDbType.Int);
+                    }
+                    else if (value.GetType() == typeof(string))
+                    {
+                        cmd.Parameters.Add($"@{col}", SqlDbType.VarChar);
+                    }
+                    else if (value.GetType() == typeof(double))
+                    {
+                        cmd.Parameters.Add($"@{col}", SqlDbType.Money);
+                    }
+                    else if (value.GetType() == typeof(DateTime))
+                    {
+                        cmd.Parameters.Add($"@{col}", SqlDbType.DateTime);
+                    }
+
+                    cmd.Parameters[$"@{col}"].Value = value;
+                }
 
                 try
                 {
