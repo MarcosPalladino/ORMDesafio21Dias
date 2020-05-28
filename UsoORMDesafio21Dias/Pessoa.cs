@@ -9,11 +9,7 @@ namespace UsoORMDesafio21Dias
     {
         [Table(IsNotOnDataBase = true)]
         public override string ConnectionString => @"Integrated Security=SSPI;Persist Security Info=False;Initial Catalog=DESAFIO21DIAS;Data Source=AMP-NOTE\SQLEXPRESS";
-
         public string Endereco { get; set; }
         public string Nome { get; set; }
-
-        
-
     }
 }
