@@ -25,6 +25,8 @@ namespace ORMDesafio21Dias
 
                 foreach (var p in this.cType.GetType().GetProperties())
                 {
+                    if (p.GetValue(this.cType) == null) continue;
+
                     TableAttribute[] propertyAttributes = (TableAttribute[])p.GetCustomAttributes(typeof(TableAttribute), false);
                     if (propertyAttributes != null && propertyAttributes.Length > 0)
                     {
@@ -173,13 +175,23 @@ namespace ORMDesafio21Dias
             return result;
         }
 
-
-
-
-
         public void Destroy()
         {
-            throw new NotImplementedException();
+            using (SqlConnection conn = new SqlConnection(this.cType.ConnectionString))
+            {
+                string sql = $"delete from {this.getTableName()} where {this.getPkName()} = {this.cType.Id}";
+
+                SqlCommand cmd = new SqlCommand(sql, conn);
+                try
+                {
+                    conn.Open();
+                    cmd.ExecuteNonQuery();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
+            }
         }
 
         public void Get()
@@ -194,21 +206,25 @@ namespace ORMDesafio21Dias
                     conn.Open();
                     using (SqlDataReader dr = cmd.ExecuteReader())
                     {
-                        this.cType.Id = Convert.ToInt32(dr[this.getPkName()]);
-
-                        foreach (var p in this.cType.GetType().GetProperties())
+                        while (dr.Read())
                         {
-                            TableAttribute[] propertyAttributes = (TableAttribute[])p.GetCustomAttributes(typeof(TableAttribute), false);
-                            if (propertyAttributes != null && propertyAttributes.Length > 0)
+
+                            this.cType.Id = Convert.ToInt32(dr[this.getPkName()]);
+
+                            foreach (var p in this.cType.GetType().GetProperties())
                             {
-                                if (!propertyAttributes[0].IsNotOnDataBase && string.IsNullOrEmpty(propertyAttributes[0].PrimaryKey))
+                                TableAttribute[] propertyAttributes = (TableAttribute[])p.GetCustomAttributes(typeof(TableAttribute), false);
+                                if (propertyAttributes != null && propertyAttributes.Length > 0)
+                                {
+                                    if (!propertyAttributes[0].IsNotOnDataBase && string.IsNullOrEmpty(propertyAttributes[0].PrimaryKey))
+                                    {
+                                        p.SetValue(this.cType, dr[p.Name]);
+                                    }
+                                }
+                                else
                                 {
                                     p.SetValue(this.cType, dr[p.Name]);
                                 }
-                            }
-                            else
-                            {
-                                p.SetValue(this.cType, dr[p.Name]);
                             }
                         }
                     }
@@ -218,15 +234,21 @@ namespace ORMDesafio21Dias
                     Console.WriteLine(ex.Message);
                 }
             }
-
-
-
-
         }
 
         private string  getPkName()
         {
-            return this.cType.Id.GetType().GetCustomAttribute<TableAttribute>().PrimaryKey;
+            /*TableAttribute[] propertyAttributes = (TableAttribute[])this.cType.GetType().GetProperty("Id").GetCustomAttributes(typeof(TableAttribute), false);
+            if (propertyAttributes != null && propertyAttributes.Length > 0 && !string.IsNullOrEmpty(propertyAttributes[0].PrimaryKey))
+            {
+                return propertyAttributes[0].PrimaryKey;
+            }
+            else
+            {
+                return "id";
+            }
+            */
+            return this.cType.GetType().GetProperty("Id").GetCustomAttribute<TableAttribute>().PrimaryKey;
         }
 
         public static T All<T>()
@@ -295,6 +317,5 @@ namespace ORMDesafio21Dias
             }
         }
         */
-
     }
 }

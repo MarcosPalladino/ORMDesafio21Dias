@@ -14,10 +14,11 @@ namespace UsoORMDesafio21Dias
 
             pessoa.Save();
 
-            //new Service(pessoa).Save();
-            
-            
+            var pessoaNova = new Pessoa() { Id = 4 };
+            pessoaNova.Get();
 
+            Console.WriteLine(pessoaNova.Nome);
+            //new Service(pessoa).Save();
         }
     }
 }
