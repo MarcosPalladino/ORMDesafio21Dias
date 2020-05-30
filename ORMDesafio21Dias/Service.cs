@@ -4,6 +4,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices.WindowsRuntime;
 
 namespace ORMDesafio21Dias
 {
@@ -208,30 +209,34 @@ namespace ORMDesafio21Dias
                     {
                         while (dr.Read())
                         {
-
-                            this.cType.Id = Convert.ToInt32(dr[this.getPkName()]);
-
-                            foreach (var p in this.cType.GetType().GetProperties())
-                            {
-                                TableAttribute[] propertyAttributes = (TableAttribute[])p.GetCustomAttributes(typeof(TableAttribute), false);
-                                if (propertyAttributes != null && propertyAttributes.Length > 0)
-                                {
-                                    if (!propertyAttributes[0].IsNotOnDataBase && string.IsNullOrEmpty(propertyAttributes[0].PrimaryKey))
-                                    {
-                                        p.SetValue(this.cType, dr[p.Name]);
-                                    }
-                                }
-                                else
-                                {
-                                    p.SetValue(this.cType, dr[p.Name]);
-                                }
-                            }
+                            this.fill(this.cType, dr);
                         }
                     }
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine(ex.Message);
+                }
+            }
+        }
+
+        private void fill(CType obj, SqlDataReader dr)
+        {
+            obj.Id = Convert.ToInt32(dr[this.getPkName()]);
+
+            foreach (var p in obj.GetType().GetProperties())
+            {
+                TableAttribute[] propertyAttributes = (TableAttribute[])p.GetCustomAttributes(typeof(TableAttribute), false);
+                if (propertyAttributes != null && propertyAttributes.Length > 0)
+                {
+                    if (!propertyAttributes[0].IsNotOnDataBase && string.IsNullOrEmpty(propertyAttributes[0].PrimaryKey))
+                    {
+                        p.SetValue(obj, dr[p.Name]);
+                    }
+                }
+                else
+                {
+                    p.SetValue(obj, dr[p.Name]);
                 }
             }
         }
@@ -251,71 +256,73 @@ namespace ORMDesafio21Dias
             return this.cType.GetType().GetProperty("Id").GetCustomAttribute<TableAttribute>().PrimaryKey;
         }
 
-        public static T All<T>()
-        {
-            throw new NotImplementedException();
-        }
-        /*
-        public static T Todos<T>()
+        public List<CType> All()
         {
             string sql;
 
-            DataTable table = new DataTable();
-            using (SqlConnection conn = new SqlConnection(ConectionString()))
+            var list = new List<CType>();
+            using (SqlConnection conn = new SqlConnection(this.cType.ConnectionString))
             {
-                if (typeof(T) == typeof(List<Juridica>))
-                    sql = "select * from pessoa where tipo = 'J' and id is not null";
-                else
-                    sql = "select * from pessoa where tipo = 'F' and id is not null";
+                sql = $"select * from {this.getTableName()}";
 
                 SqlCommand cmd = new SqlCommand(sql, conn);
                 try
                 {
                     conn.Open();
-                    using (SqlDataAdapter a = new SqlDataAdapter(cmd))
+
+                    using (SqlDataReader dr = cmd.ExecuteReader())
                     {
-                        a.Fill(table);
+                        while (dr.Read())
+                        {
+                            var instance = (CType)Activator.CreateInstance(this.cType.GetType());
+                            this.fill(instance, dr);
+                            list.Add(instance);
+                        }
                     }
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine(ex.Message);
                 }
-            }
-
-            if (typeof(T) == typeof(List<Juridica>))
-            {
-                var listaJuridica = new List<Juridica>();
-
-                foreach (DataRow linha in table.Rows)
-                {
-                    listaJuridica.Add(new Juridica()
-                    {
-                        Nome = linha["nome"].ToString(),
-                        Id = Convert.ToInt32(linha["id"]),
-                        Endereco = linha["endereco"].ToString(),
-                        Cnpj = linha["cpfcnpj"].ToString()
-                    });
-                }
-                return (T)Convert.ChangeType(listaJuridica, typeof(T));
-            }
-            else
-            {
-                var listaFisica = new List<Fisica>();
-
-                foreach (DataRow linha in table.Rows)
-                {
-                    listaFisica.Add(new Fisica()
-                    {
-                        Nome = linha["nome"].ToString(),
-                        Id = Convert.ToInt32(linha["id"]),
-                        Endereco = linha["endereco"].ToString(),
-                        Cpf = linha["cpfcnpj"].ToString()
-                    });
-                }
-                return (T)Convert.ChangeType(listaFisica, typeof(T));
+                return list;
             }
         }
-        */
+
+        public static T All<T>()
+        {
+
+            var list = Activator.CreateInstance(typeof(T));
+            var intance = ((List<object>)list)[0];
+
+            /*using (SqlConnection conn = new SqlConnection(this.cType.ConnectionString))
+            {
+                string sql;
+                sql = $"select * from {this.getTableName()}";
+
+                SqlCommand cmd = new SqlCommand(sql, conn);
+                try
+                {
+                    conn.Open();
+
+                    using (SqlDataReader dr = cmd.ExecuteReader())
+                    {
+                        while (dr.Read())
+                        {
+                            var instance = (CType)Activator.CreateInstance(this.cType.GetType());
+                            this.fill(instance, dr);
+                            list.Add(instance);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
+                return (T)Convert.ChangeType(list, typeof(T));
+            }
+            */
+
+            return (T)Convert.ChangeType(list, typeof(T));
+        }
     }
 }
