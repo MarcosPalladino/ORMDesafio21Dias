@@ -68,7 +68,7 @@ namespace ORMDesafio21Dias
                     }
                     sql += string.Join(',', colsUpdate);
 
-                    sql += $"where {this.getPkName()} = {this.cType.Id}";
+                    sql += $"where {getPkName(this.cType)} = {this.cType.Id}";
                 }
 
                 SqlCommand cmd = new SqlCommand(sql, conn);
@@ -180,7 +180,7 @@ namespace ORMDesafio21Dias
         {
             using (SqlConnection conn = new SqlConnection(this.cType.ConnectionString))
             {
-                string sql = $"delete from {this.getTableName()} where {this.getPkName()} = {this.cType.Id}";
+                string sql = $"delete from {this.getTableName()} where {getPkName(this.cType)} = {this.cType.Id}";
 
                 SqlCommand cmd = new SqlCommand(sql, conn);
                 try
@@ -199,7 +199,7 @@ namespace ORMDesafio21Dias
         {
             using (SqlConnection conn = new SqlConnection(this.cType.ConnectionString))
             {
-                string sql = $"select * from {this.getTableName()} where {this.getPkName()} = {this.cType.Id}";
+                string sql = $"select * from {this.getTableName()} where {getPkName(this.cType)} = {this.cType.Id}";
 
                 SqlCommand cmd = new SqlCommand(sql, conn);
                 try
@@ -222,7 +222,7 @@ namespace ORMDesafio21Dias
 
         private void fill(CType obj, SqlDataReader dr)
         {
-            obj.Id = Convert.ToInt32(dr[this.getPkName()]);
+            obj.Id = Convert.ToInt32(dr[getPkName(this.cType)]);
 
             foreach (var p in obj.GetType().GetProperties())
             {
@@ -241,19 +241,9 @@ namespace ORMDesafio21Dias
             }
         }
 
-        private string  getPkName()
+        private static string getPkName<T>(T item)
         {
-            /*TableAttribute[] propertyAttributes = (TableAttribute[])this.cType.GetType().GetProperty("Id").GetCustomAttributes(typeof(TableAttribute), false);
-            if (propertyAttributes != null && propertyAttributes.Length > 0 && !string.IsNullOrEmpty(propertyAttributes[0].PrimaryKey))
-            {
-                return propertyAttributes[0].PrimaryKey;
-            }
-            else
-            {
-                return "id";
-            }
-            */
-            return this.cType.GetType().GetProperty("Id").GetCustomAttribute<TableAttribute>().PrimaryKey;
+            return item.GetType().GetProperty("Id").GetCustomAttribute<TableAttribute>().PrimaryKey;
         }
 
         public List<CType> All()
@@ -288,16 +278,15 @@ namespace ORMDesafio21Dias
             }
         }
 
-        public static T All<T>()
+        public static List<T> All<T>()
         {
-
-            var list = Activator.CreateInstance(typeof(T));
-            var intance = ((List<object>)list)[0];
-
-            /*using (SqlConnection conn = new SqlConnection(this.cType.ConnectionString))
+            T item = (T)Activator.CreateInstance(typeof(T));
+            var cnnString = item.GetType().GetProperty("ConnectionString").GetValue(item).ToString();
+            List<T> result = new List<T>();
+            using (SqlConnection conn = new SqlConnection(cnnString))
             {
                 string sql;
-                sql = $"select * from {this.getTableName()}";
+                sql = $"select * from {getTableName(item)}";
 
                 SqlCommand cmd = new SqlCommand(sql, conn);
                 try
@@ -308,9 +297,9 @@ namespace ORMDesafio21Dias
                     {
                         while (dr.Read())
                         {
-                            var instance = (CType)Activator.CreateInstance(this.cType.GetType());
-                            this.fill(instance, dr);
-                            list.Add(instance);
+                            T instance = (T)Activator.CreateInstance(typeof(T));
+                            fill(instance, dr);
+                            result.Add(instance);
                         }
                     }
                 }
@@ -318,11 +307,153 @@ namespace ORMDesafio21Dias
                 {
                     Console.WriteLine(ex.Message);
                 }
-                return (T)Convert.ChangeType(list, typeof(T));
             }
-            */
 
-            return (T)Convert.ChangeType(list, typeof(T));
+            return result;
+        }
+
+        private static void fill<T>(T obj, SqlDataReader dr)
+        {
+            foreach (var p in obj.GetType().GetProperties())
+            {
+                TableAttribute propertyAttribute = p.GetCustomAttribute<TableAttribute>();
+                if (propertyAttribute != null)
+                {
+                    if (!propertyAttribute.IsNotOnDataBase)
+                    {
+                        if (!string.IsNullOrEmpty(propertyAttribute.PrimaryKey))
+                        {
+                            if (dr[propertyAttribute.PrimaryKey] != DBNull.Value)
+                                p.SetValue(obj, dr[propertyAttribute.PrimaryKey]);
+                        }
+                        else if (dr[p.Name] != DBNull.Value)
+                        {
+                            p.SetValue(obj, dr[p.Name]);
+                        }
+                    }
+                }
+                else if (dr[p.Name] != DBNull.Value)
+                {
+                    p.SetValue(obj, dr[p.Name]);
+                }
+            }
+        }
+
+        private static string getTableName<T>(T item)
+        {
+            var table = $"{item.GetType().Name.ToLower()}s";
+
+            TableAttribute tableAttribute = item.GetType().GetCustomAttribute<TableAttribute>();
+            if (tableAttribute != null)
+            {
+                table = tableAttribute.Name;
+            }
+            return table;
+        }
+
+        public static void DropTable<T>()
+        {
+            T item = (T)Activator.CreateInstance(typeof(T));
+            var cnnString = item.GetType().GetProperty("ConnectionString").GetValue(item).ToString();
+
+            using (SqlConnection conn = new SqlConnection(cnnString))
+            {
+                string sql;
+
+                sql = $"DROP TABLE {getTableName(item)}";
+
+                SqlCommand cmd = new SqlCommand(sql, conn);
+                try
+                {
+                    conn.Open();
+
+                    cmd.ExecuteNonQuery();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
+            }
+        }
+
+        public static void CreateTable<T>()
+        {
+            T item = (T)Activator.CreateInstance(typeof(T));
+            var cnnString = item.GetType().GetProperty("ConnectionString").GetValue(item).ToString();
+
+            using (SqlConnection conn = new SqlConnection(cnnString))
+            {
+                string sql;
+
+                sql = $"CREATE TABLE {getTableName(item)}" +
+                    $"(" +
+                    $"{getPkName(item)} int IDENTITY(1, 1),";
+                sql += fildsCreateTable(item);
+                sql += $")";
+
+                SqlCommand cmd = new SqlCommand(sql, conn);
+                try
+                {
+                    conn.Open();
+
+                    cmd.ExecuteNonQuery();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
+            }
+        }
+
+        private static string fildsCreateTable<T>(T item)
+        {
+            List<string> fields = new List<string>();
+
+            foreach (var p in item.GetType().GetProperties())
+            {
+                TableAttribute propertyAttribute = p.GetCustomAttribute<TableAttribute>();
+                if (propertyAttribute != null)
+                {
+                    if (!propertyAttribute.IsNotOnDataBase && string.IsNullOrEmpty(propertyAttribute.PrimaryKey))
+                    {
+                        fields.Add($"{p.Name} {getSqlTypeOfProperty(p)}");
+                    }
+                }
+                else
+                {
+                    fields.Add($"{p.Name} {getSqlTypeOfProperty(p)}");
+                }
+            }
+
+            return string.Join(',', fields);
+        }
+
+        private static string getSqlTypeOfProperty(PropertyInfo p)
+        {
+            string type;
+            switch (Type.GetTypeCode(p.PropertyType))
+            {
+                case TypeCode.String:
+                    type = "varchar(255)";
+                    break;
+                case TypeCode.Boolean:
+                    type = "tinyint";
+                    break;
+                case TypeCode.Int32:
+                    type = "int";
+                    break;
+                case TypeCode.Double:
+                    type = "DECIMAL (10, 2)";
+                    break;
+                case TypeCode.DateTime:
+                    type = "DateTime";
+                    break;
+                default:
+                    type = "varchar(255)";
+                    break;
+            }
+
+            return type;
         }
     }
 }

@@ -1,6 +1,5 @@
 ﻿using ORMDesafio21Dias;
 using System;
-using System.Collections.Generic;
 
 namespace UsoORMDesafio21Dias
 {
@@ -8,14 +7,12 @@ namespace UsoORMDesafio21Dias
     {
         static void Main(string[] args)
         {
-            var pessoas2 = Service.All<List<Pessoa>>();
-            //var pessoas2 = Service
 
-            var pessoas = new Service(new Pessoa()).All();
-            foreach(Pessoa pessoa in pessoas)
-            {
-                Console.WriteLine(pessoa.Nome);
-            }
+            //Service.DropTable<Pessoa>();
+
+            Service.CreateTable<Marco>();
+
+            new Marco() { Nome = "Marcosssss", Endereco = "Rua teste, 333", Fone = "9999-9999", Cep = 45960670, Email = "teste@teste.com.br" }.Save();
 
             Console.ReadLine();
 
